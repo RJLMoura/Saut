@@ -12,6 +12,7 @@ particle_x = WIDTH // 2
 particle_y = HEIGHT // 2
 particle_heading = 0  # In degrees, 0 degrees is facing right
 particle_speed = 10
+angular_speed = 10
 
 # Variables to store distances
 distances = []
@@ -40,7 +41,7 @@ def update_distances():
 
 # Function to update the particle's position based on its heading and speed
 def update_position():
-    global particle_x, particle_y  # Declare as global to modify the global variables
+    global particle_x, particle_y, particle_heading  # Declare as global to modify the global variables
     angle = math.radians(particle_heading)
     delta_x = particle_speed * math.cos(angle)
     delta_y = particle_speed * math.sin(angle)
@@ -86,9 +87,18 @@ while True:
     if keyboard.is_pressed('up'):
         update_position()
     elif keyboard.is_pressed('left'):
-        particle_heading += 10
+        particle_heading += angular_speed
     elif keyboard.is_pressed('right'):
-        particle_heading -= 10
+        particle_heading -= angular_speed
+    elif keyboard.is_pressed('x'):
+            particle_speed += 1
+    elif keyboard.is_pressed('z'):
+            particle_speed -= 1
+            print("particle speed:", particle_speed)
+    elif keyboard.is_pressed('s'):
+            angular_speed += 1
+    elif keyboard.is_pressed('a'):
+            angular_speed -= 1
     elif keyboard.is_pressed('q'):
         break  # Exit the program if 'q' key is pressed
 
