@@ -2,6 +2,7 @@ import math
 import matplotlib.pyplot as plt
 import keyboard
 import random
+from initialization import initialize_state_covariance
 
 # Constants for the interface dimensions
 WIDTH = 800
@@ -13,6 +14,15 @@ particle_y = HEIGHT // 2
 particle_heading = 0  # In degrees, 0 degrees is facing right
 particle_speed = 10
 angular_speed = 10
+
+#Initialize the state vetor and the convariance matrix
+state_vector, covariance_matrix = initialize_state_covariance(num_landmarks)
+
+print("State Vector:")
+print(state_vector)
+
+print("Covariance Matrix:")
+print(covariance_matrix)
 
 # Variables to store distances
 distances = []

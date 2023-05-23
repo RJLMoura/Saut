@@ -1,15 +1,22 @@
 import math
 import numpy as np
-#Number of landmarks
-from main import num_landmarks
 
-#Vetor de estado initializada a 0 
-state_vetor = np.zeros((2*num_landmarks + 3, 1))
-print(state_vetor)
 
-#Matriz da convariancia
-conv_matrix = np.zeros((2*num_landmarks+3,2*num_landmarks+3))
-for i in range(3,2*num_landmarks + 3):
-    conv_matrix[i,i] = np.inf
+def initialize_state_covariance(num_landmarks):
+    """
+    Inicializa o vetor de estado e a matriz de covariância do EKF SLAM.
 
-print(conv_matrix)
+    Argumentos:
+    - num_landmarks: número de landmarks no ambiente
+
+    Retorna:
+    - state_vector: vetor de estado inicializado com zeros
+    - covariance_matrix: matriz de covariância inicializada com zeros e diagonal infinita para as landmarks
+    """
+    state_vector = np.zeros((2 * num_landmarks + 3, 1))
+
+    covariance_matrix = np.zeros((2 * num_landmarks + 3, 2 * num_landmarks + 3))
+    for i in range(3, 2 * num_landmarks + 3):
+        covariance_matrix[i, i] = np.inf
+
+    return state_vector, covariance_matrix
