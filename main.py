@@ -15,6 +15,13 @@ particle_heading = 0  # In degrees, 0 degrees is facing right
 particle_speed = 10
 angular_speed = 10
 
+
+# Variables to store distances
+distances = []
+
+# Generate random number of landmarks and their positions
+num_landmarks = random.randint(3, 6)
+
 #Initialize the state vetor and the convariance matrix
 state_vector, covariance_matrix = initialize_state_covariance(num_landmarks)
 
@@ -24,16 +31,12 @@ print(state_vector)
 print("Covariance Matrix:")
 print(covariance_matrix)
 
-# Variables to store distances
-distances = []
-
-# Generate random number of landmarks and their positions
-num_landmarks = random.randint(3, 6)
 LANDMARKS = []
 for _ in range(num_landmarks):
     landmark_x = random.randint(0, WIDTH)
     landmark_y = random.randint(0, HEIGHT)
     LANDMARKS.append((landmark_x, landmark_y))
+
 
 # Create the figure and axis for the graph
 fig, ax = plt.subplots()
