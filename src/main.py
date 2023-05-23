@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import keyboard
 import random
 from initialization import initialize_state_covariance
+from motion import update_pose
 
 # Constants for the interface dimensions
 WIDTH = 800
@@ -60,6 +61,7 @@ def update_position():
     delta_y = particle_speed * math.sin(angle)
     particle_x += int(delta_x)
     particle_y += int(delta_y)
+    
 
 # Main loop
 while True:
