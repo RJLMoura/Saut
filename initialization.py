@@ -1,4 +1,3 @@
 import math
-import matplotlib.pyplot as plt
-import keyboard
-import random
+#Number of landmarks
+from main import num_landmarks
