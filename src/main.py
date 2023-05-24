@@ -3,9 +3,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import keyboard
 import random
+import rospy
 from initialization import initialize_state_covariance
-from motion import update_pose
-
+#from motion import update_pose
+from nav_msgs.msg import Odometry
 # Constants for the interface dimensions
 WIDTH = 800
 HEIGHT = 600
@@ -67,16 +68,36 @@ def update_position():
     particle_x += int(delta_x)
     particle_y += int(delta_y)
     
+def callback(msg):
+    rospy.loginfo("Received message: %s", msg.data)
+    
+     # Set the flag to indicate new data arrival
+    new_data_flag = True
+    return new_data_flag
+
+# Initialize the ROS node
+rospy.init_node('subscriber_node')
+new_data_flag = False
+# Create a Subscriber object
+sub = rospy.Subscriber('/pose', Odometry, callback)
 
 # Main loop
 while True:
     # Update distances
     update_distances()
+    
+    if new_data_flag:
+        # New data is available, perform necessary operations
+        # Reset the flag
+        print("testing")
+        new_data_flag = False
 
+ 
     # Print distances
-    print("Distances to landmarks:")
-    for i, distance in enumerate(distances):
-        print(f"Landmark {i+1}: {distance:.2f}")
+    #print("Distances to landmarks:")
+    #for i, distance in enumerate(distances):
+        #print(f"Landmark {i+1}: {distance:.2f}") 
+
 
     # Clear the previous plot
     ax.clear()

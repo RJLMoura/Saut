@@ -23,5 +23,3 @@ def update_pose(x, y, theta, dt, v, omega):
     theta_new = theta + dt * omega
     
     return x_new, y_new, theta_new
-
-    
