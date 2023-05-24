@@ -1,5 +1,6 @@
 import math
 import matplotlib.pyplot as plt
+import numpy as np
 import keyboard
 import random
 from initialization import initialize_state_covariance
@@ -22,6 +23,10 @@ distances = []
 
 # Generate random number of landmarks and their positions
 num_landmarks = random.randint(3, 6)
+
+Fx = np.zeros((3, 2*num_landmarks + 3))
+for i in range(3):
+    Fx[i,i] = 1
 
 #Initialize the state vetor and the convariance matrix
 state_vector, covariance_matrix = initialize_state_covariance(num_landmarks)

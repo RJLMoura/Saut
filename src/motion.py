@@ -2,9 +2,6 @@ import math
 from main import num_landmarks
 import numpy as np
 
-Fx = np.zeros((2*num_landmarks + 3, 3))
-for i in range(3):
-    Fx[i,i] = 1
 
 def update_pose(x, y, theta, dt, v, omega):
     """
