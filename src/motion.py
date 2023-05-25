@@ -3,7 +3,7 @@ from main import num_landmarks
 import numpy as np
 
 
-def update_pose(x, y, theta, dt, v, omega):
+def update_pose(state,Fx, dt, v,n, omega):
     """
     Atualiza a pose (posição e orientação) do robô com base nos comandos de controle.
     
@@ -18,8 +18,10 @@ def update_pose(x, y, theta, dt, v, omega):
     Retorna:
     - Novas coordenadas x, y e orientação theta atualizadas
     """
-    x_new = x + dt * v * math.cos(theta)
-    y_new = y + dt * v * math.sin(theta)
-    theta_new = theta + dt * omega
+    new_state = np.zeros(2*n+3,1)
+    array = [(-(v/omega)*math.sin(state[2,0]) + (v/omega)*math.sin(state[2,0] + omega*dt)),
+             ((v/omega)*math.cos(state[2,0]) - (v/omega)*math.cos(state[2,0] + omega*dt)),
+             (omega*dt)]
+    new_state = state + list(zip(*Fx)) @ array
     
-    return x_new, y_new, theta_new
+    return new_state
