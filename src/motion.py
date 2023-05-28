@@ -1,5 +1,4 @@
 import math
-from main import num_landmarks
 import numpy as np
 
 
@@ -18,10 +17,21 @@ def update_pose(state,Fx, dt, v,n, omega):
     Retorna:
     - Novas coordenadas x, y e orientação theta atualizadas
     """
-    new_state = np.zeros(2*n+3,1)
-    array = [(-(v/omega)*math.sin(state[2,0]) + (v/omega)*math.sin(state[2,0] + omega*dt)),
-             ((v/omega)*math.cos(state[2,0]) - (v/omega)*math.cos(state[2,0] + omega*dt)),
-             (omega*dt)]
-    new_state = state + list(zip(*Fx)) @ array
+
+    print("Velocity:",v, " Angular velocity:",omega,"Time:",dt,"\n")
+    print("Vector State:",state)
+    if omega==0:
+        state[0,0] = state[0,0] + v * dt * math.cos(state[2,0])
+        state[1,0] = state[1,0] + v * dt * math.sin(state[2,0])
+
+        new_state = state
+        
+    else:
+        new_state = np.zeros((2*n+3,1))
+        array = [(-(v/omega)*math.sin(state[2,0]) + (v/omega)*math.sin(state[2,0] + omega*dt)),
+                 ((v/omega)*math.cos(state[2,0]) - (v/omega)*math.cos(state[2,0] + omega*dt)),
+                 (omega*dt)]
+        new_state = state + Fx.T @ np.array(array).reshape(-1, 1)
+    
     
     return new_state

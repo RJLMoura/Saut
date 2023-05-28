@@ -4,12 +4,15 @@ import numpy as np
 import keyboard
 import random
 import rospy
+import tf
 from initialization import initialize_state_covariance
-#from motion import update_pose
+from motion import update_pose
 from nav_msgs.msg import Odometry
 # Constants for the interface dimensions
 WIDTH = 800
 HEIGHT = 600
+
+previous_time=0
 
 # Variables for particle position, heading, and speed
 particle_x = WIDTH // 2
@@ -69,11 +72,54 @@ def update_position():
     particle_y += int(delta_y)
     
 def callback(msg):
-    rospy.loginfo("Received message: %s", msg.data)
+    global previous_time
+    global state_vector
+
     
+    rospy.loginfo("Received message: %s", msg.pose.pose)
+
+    rospy.loginfo("current time: %s", msg.header.stamp)
+
+    orientation_x = msg.pose.pose.orientation.x
+    orientation_y = msg.pose.pose.orientation.y
+    orientation_z = msg.pose.pose.orientation.z
+    orientation_w = msg.pose.pose.orientation.w
+
+    velocity = msg.twist.twist.linear.x
+    angular_velocity = msg.twist.twist.angular.z
+
+     # Access the seconds and nanoseconds components of the timestamp
+    timestamp_secs = msg.header.stamp.secs
+    timestamp_nsecs = msg.header.stamp.nsecs
+
+    time = float(str(timestamp_secs) + '.' + str(timestamp_nsecs))
+    if previous_time == 0:
+        previous_time=time
+    else:
+        dt=time-previous_time
+        previous_time=time
+
+    # Convert the orientation data to Euler angles     
+    quarternion = (orientation_x, orientation_y, orientation_z, orientation_w)
+    euler = tf.transformations.euler_from_quaternion(quarternion)
+        
+    # Extract roll, pitch, and yaw from Euler angles
+    roll = euler[0]
+    pitch = euler[1]
+    yaw = euler[2]
+        
      # Set the flag to indicate new data arrival
     new_data_flag = True
+
+    """ print("tempo: \n", dt, "angulo: \n", yaw)
+    print("Velocity: ",velocity, "Angular Velocity: ",angular_velocity,"\n") """
+    #Running the motion model
+    state_vector = update_pose(state_vector,Fx, dt, velocity, num_landmarks, angular_velocity)
+
+    #print("state_vector: \n", state_vector)
+
     return new_data_flag
+    
 
 # Initialize the ROS node
 rospy.init_node('subscriber_node')
@@ -83,6 +129,8 @@ sub = rospy.Subscriber('/pose', Odometry, callback)
 
 # Main loop
 while True:
+    print("olalaassa")
+
     # Update distances
     update_distances()
     
@@ -125,7 +173,7 @@ while True:
     plt.pause(0.01)
 
     # Read keyboard input
-    if keyboard.is_pressed('up'):
+    """ if keyboard.is_pressed('up'):
         update_position()
     elif keyboard.is_pressed('left'):
         particle_heading += angular_speed
@@ -141,7 +189,7 @@ while True:
     elif keyboard.is_pressed('a'):
             angular_speed -= 1
     elif keyboard.is_pressed('q'):
-        break  # Exit the program if 'q' key is pressed
+        break  # Exit the program if 'q' key is pressed """
 
     # Limit particle position within the interface dimensions
     particle_x = max(0, min(WIDTH - 1, particle_x))
