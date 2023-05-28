@@ -33,5 +33,4 @@ def update_pose(state,Fx, dt, v,n, omega):
                  (omega*dt)]
         new_state = state + Fx.T @ np.array(array).reshape(-1, 1)
     
-    
     return new_state

@@ -9,11 +9,12 @@ from initialization import initialize_state_covariance
 from motion import update_pose
 from nav_msgs.msg import Odometry
 # Constants for the interface dimensions
-WIDTH = 800
-HEIGHT = 600
+WIDTH = 30
+HEIGHT = 15
 
 previous_time=0
 start_time=0
+position_x=position_y=0
 
 # Variables for particle position, heading, and speed
 particle_x = WIDTH // 2
@@ -76,6 +77,7 @@ def callback(msg):
     global previous_time
     global state_vector
     global start_time
+    global position_x, position_y
 
     
     #rospy.loginfo("Received message: %s", msg.pose.pose)
@@ -86,6 +88,9 @@ def callback(msg):
     orientation_y = msg.pose.pose.orientation.y
     orientation_z = msg.pose.pose.orientation.z
     orientation_w = msg.pose.pose.orientation.w
+    
+    position_x = msg.pose.pose.position.x
+    position_y = msg.pose.pose.position.y
 
     velocity = msg.twist.twist.linear.x
     angular_velocity = msg.twist.twist.angular.z
@@ -97,6 +102,7 @@ def callback(msg):
     time = float(str(timestamp_secs) + '.' + str(timestamp_nsecs).zfill(9))
     if previous_time == 0:
         previous_time=time
+        dt=0
     else:
         dt=time-previous_time
         
@@ -154,18 +160,24 @@ while True:
 
 
     # Clear the previous plot
-    ax.clear()
+    #ax.clear()
 
     # Plot the particle position
-    ax.plot(particle_x, particle_y, 'ro', label='Particle')
+    #ax.plot(particle_x, particle_y, 'ro', label='Particle')
 
     # Plot the landmark positions
-    for i, landmark in enumerate(LANDMARKS):
-        ax.plot(landmark[0], landmark[1], 'bo', label=f'Landmark {i+1}')
+    #for i, landmark in enumerate(LANDMARKS):
+        #ax.plot(landmark[0], landmark[1], 'bo', label=f'Landmark {i+1}')
+        
+    print("State Vector:", state_vector)
+        
+    ax.plot(state_vector[0], state_vector[1], 'go', markersize=1)
 
+    ax.plot(position_x, position_y, 'bo', markersize=1)
+    
     # Set the axis limits
-    ax.set_xlim(0, WIDTH)
-    ax.set_ylim(0, HEIGHT)
+    ax.set_xlim(-WIDTH, WIDTH)
+    ax.set_ylim(-HEIGHT, HEIGHT*2)
 
     # Set the title and labels
     ax.set_title('Active Particle')
