@@ -13,6 +13,7 @@ WIDTH = 800
 HEIGHT = 600
 
 previous_time=0
+start_time=0
 
 # Variables for particle position, heading, and speed
 particle_x = WIDTH // 2
@@ -74,11 +75,12 @@ def update_position():
 def callback(msg):
     global previous_time
     global state_vector
+    global start_time
 
     
-    rospy.loginfo("Received message: %s", msg.pose.pose)
+    #rospy.loginfo("Received message: %s", msg.pose.pose)
 
-    rospy.loginfo("current time: %s", msg.header.stamp)
+    #rospy.loginfo("current time: %s.%s", msg.header.stamp.secs, msg.header.stamp.nsecs)
 
     orientation_x = msg.pose.pose.orientation.x
     orientation_y = msg.pose.pose.orientation.y
@@ -92,13 +94,19 @@ def callback(msg):
     timestamp_secs = msg.header.stamp.secs
     timestamp_nsecs = msg.header.stamp.nsecs
 
-    time = float(str(timestamp_secs) + '.' + str(timestamp_nsecs))
+    time = float(str(timestamp_secs) + '.' + str(timestamp_nsecs).zfill(9))
     if previous_time == 0:
         previous_time=time
     else:
         dt=time-previous_time
+        
         previous_time=time
+        
+    if start_time == 0:
+        start_time=time
 
+    elapsed_time=time-start_time
+    
     # Convert the orientation data to Euler angles     
     quarternion = (orientation_x, orientation_y, orientation_z, orientation_w)
     euler = tf.transformations.euler_from_quaternion(quarternion)
@@ -129,8 +137,6 @@ sub = rospy.Subscriber('/pose', Odometry, callback)
 
 # Main loop
 while True:
-    print("olalaassa")
-
     # Update distances
     update_distances()
     
