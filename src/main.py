@@ -5,6 +5,7 @@ import keyboard
 import random
 import rospy
 import tf
+from tf2_msgs.msg import TFMessage
 from initialization import initialize_state_covariance
 from motion import update_pose
 from nav_msgs.msg import Odometry
@@ -133,6 +134,9 @@ def callback(msg):
     #print("state_vector: \n", state_vector)
 
     return new_data_flag
+
+def callback_fiducial(msg):
+    rospy.loginfo("Received message: %s", msg.transform)
     
 
 # Initialize the ROS node
@@ -140,6 +144,8 @@ rospy.init_node('subscriber_node')
 new_data_flag = False
 # Create a Subscriber object
 sub = rospy.Subscriber('/pose', Odometry, callback)
+
+sub2 = rospy.Subscriber('/fiducial_transforms', TFMessage, callback_fiducial)
 
 # Main loop
 while True:
@@ -169,7 +175,7 @@ while True:
     #for i, landmark in enumerate(LANDMARKS):
         #ax.plot(landmark[0], landmark[1], 'bo', label=f'Landmark {i+1}')
         
-    print("State Vector:", state_vector)
+    #print("State Vector:", state_vector)
         
     ax.plot(state_vector[0], state_vector[1], 'go', markersize=1)
 

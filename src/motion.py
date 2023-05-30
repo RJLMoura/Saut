@@ -19,7 +19,7 @@ def update_pose(state,Fx, dt, v,n, omega):
     """
 
     print("Velocity:",v, " Angular velocity:",omega,"Time:",dt,"\n")
-    print("Vector State:",state)
+    #print("Vector State:",state)
     if omega==0:
         state[0,0] = state[0,0] + v * dt * math.cos(state[2,0])
         state[1,0] = state[1,0] + v * dt * math.sin(state[2,0])
