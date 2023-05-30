@@ -18,7 +18,7 @@ def update_pose(state,Fx, dt, v,n, omega):
     - Novas coordenadas x, y e orientação theta atualizadas
     """
 
-    print("Velocity:",v, " Angular velocity:",omega,"Time:",dt,"\n")
+    #print("Velocity:",v, " Angular velocity:",omega,"Time:",dt,"\n")
     #print("Vector State:",state)
     if omega==0:
         state[0,0] = state[0,0] + v * dt * math.cos(state[2,0])

@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import math
 import matplotlib.pyplot as plt
 import numpy as np
@@ -5,10 +7,11 @@ import keyboard
 import random
 import rospy
 import tf
-from tf2_msgs.msg import TFMessage
+from fiducial_msgs.msg import FiducialTransformArray
 from initialization import initialize_state_covariance
 from motion import update_pose
 from nav_msgs.msg import Odometry
+
 # Constants for the interface dimensions
 WIDTH = 30
 HEIGHT = 15
@@ -136,16 +139,16 @@ def callback(msg):
     return new_data_flag
 
 def callback_fiducial(msg):
-    rospy.loginfo("Received message: %s", msg.transform)
+    rospy.loginfo("Received message: %s", msg.transforms)
     
 
 # Initialize the ROS node
 rospy.init_node('subscriber_node')
 new_data_flag = False
 # Create a Subscriber object
-sub = rospy.Subscriber('/pose', Odometry, callback)
+sub = rospy.Subscriber('/pose', Odometry, callback) 
 
-sub2 = rospy.Subscriber('/fiducial_transforms', TFMessage, callback_fiducial)
+sub2 = rospy.Subscriber('/fiducial_transforms', FiducialTransformArray, callback_fiducial)
 
 # Main loop
 while True:
