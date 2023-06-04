@@ -10,8 +10,19 @@ import tf
 from fiducial_msgs.msg import FiducialTransformArray
 from initialization import initialize_state_covariance
 from motion import update_pose
+from update import initialize_landmark
+from convariance import jacobian, covariance 
 from nav_msgs.msg import Odometry
 
+num_landmarks=32
+Rt=0.05
+
+k=0
+
+Fx = np.zeros((3, 2*num_landmarks + 3))
+for i in range(3):
+    Fx[i,i] = 1
+    
 # Constants for the interface dimensions
 WIDTH = 30
 HEIGHT = 15
@@ -19,6 +30,7 @@ HEIGHT = 15
 previous_time=0
 start_time=0
 position_x=position_y=0
+list_index = []
 
 # Variables for particle position, heading, and speed
 particle_x = WIDTH // 2
@@ -31,12 +43,7 @@ angular_speed = 10
 # Variables to store distances
 distances = []
 
-# Generate random number of landmarks and their positions
-num_landmarks = random.randint(3, 6)
 
-Fx = np.zeros((3, 2*num_landmarks + 3))
-for i in range(3):
-    Fx[i,i] = 1
 
 #Initialize the state vetor and the convariance matrix
 state_vector, covariance_matrix = initialize_state_covariance(num_landmarks)
@@ -82,7 +89,7 @@ def callback(msg):
     global state_vector
     global start_time
     global position_x, position_y
-
+    global covariance_matrix
     
     #rospy.loginfo("Received message: %s", msg.pose.pose)
 
@@ -132,6 +139,10 @@ def callback(msg):
     """ print("tempo: \n", dt, "angulo: \n", yaw)
     print("Velocity: ",velocity, "Angular Velocity: ",angular_velocity,"\n") """
     #Running the motion model
+
+    Gt = jacobian(velocity, angular_velocity, dt, state_vector[2,0], Fx, num_landmarks)
+    covariance_matrix =  covariance(Gt,covariance_matrix,Fx,Rt,num_landmarks)
+
     state_vector = update_pose(state_vector,Fx, dt, velocity, num_landmarks, angular_velocity)
 
     #print("state_vector: \n", state_vector)
@@ -139,7 +150,80 @@ def callback(msg):
     return new_data_flag
 
 def callback_fiducial(msg):
-    rospy.loginfo("Received message: %s", msg.transforms)
+    obtain_fiducial_values(msg)
+
+
+def obtain_fiducial_values(msg):
+    global list_index
+    global state_vector
+
+    i=0
+
+    instance_id = set()
+
+    z_matrix=np.empty((2,0))
+
+    for transform in msg.transforms:
+        i=i+1
+
+        #obtain the distance values
+        landmark_x=transform.transform.translation.x
+        landmark_y=transform.transform.translation.y
+        landmark_z=transform.transform.translation.z
+
+        #calculate the R distance, the distance from the robot to the landmark in the 3D axis
+        distance_R=math.sqrt(landmark_x**2+landmark_y**2+landmark_z**2)
+
+        #obtain the quarternion values
+        rotation_x = transform.transform.rotation.x
+        rotation_y = transform.transform.rotation.y
+        rotation_z = transform.transform.rotation.z
+        rotation_w = transform.transform.rotation.w
+
+        # Convert the orientation data to Euler angles     
+        quarternion = (rotation_x, rotation_y, rotation_z, rotation_w)
+        euler = tf.transformations.euler_from_quaternion(quarternion)
+
+        observe_z = np.array([distance_R, euler[2]]).reshape(2, 1)
+
+        z_matrix=np.concatenate((z_matrix,observe_z), axis=1)
+        
+        marker_id = transform.fiducial_id
+
+        #nova landmark no header
+        if marker_id not in instance_id:
+            instance_id.add(marker_id)
+
+        global k
+        #Se a landmark nunca foi observada
+        if marker_id not in list_index:
+            # Register the new ID
+            #observed_ids.append(marker_id)
+            index=k
+            k+=1
+            list_index.append(marker_id)
+
+            print("number of ids: ", k)
+            print("landmark array: ", list_index)
+
+            rospy.loginfo("New marker ID registered: {}".format(marker_id))
+            
+            state_vector[2 * index + 3, 0] = state_vector[0, 0] + observe_z[0, 0] * math.cos(observe_z[1][0] + state_vector[2, 0])
+            state_vector[2 * index + 4, 0] = state_vector[1, 0] + observe_z[0, 0] * math.cos(observe_z[1][0] + state_vector[2, 0])
+
+            
+
+    """ for j in range(i):
+        id = instance_id(j)
+
+        MUDAR SET PARA LISTA!!!!
+        
+        index=observed_ids.index(id)
+        data = [row[0] for row in z_matrix]
+
+        covariance_matrix , state_vector = initialize_landmark(index, num_landmarks, covariance_matrix, state_vector, data) """
+
+
     
 
 # Initialize the ROS node
@@ -178,9 +262,14 @@ while True:
     #for i, landmark in enumerate(LANDMARKS):
         #ax.plot(landmark[0], landmark[1], 'bo', label=f'Landmark {i+1}')
         
-    #print("State Vector:", state_vector)
-        
+    print("State Vector:", state_vector)
+    
     ax.plot(state_vector[0], state_vector[1], 'go', markersize=1)
+    
+    for i in range(num_landmarks):
+        if state_vector[2*i+3] != 0 or state_vector[2*i+4] != 0:
+            ax.plot(state_vector[2*i+3], state_vector[2*i+4], 'r+',markersize = 3)
+
 
     ax.plot(position_x, position_y, 'bo', markersize=1)
     
