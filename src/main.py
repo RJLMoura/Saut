@@ -13,11 +13,15 @@ from motion import update_pose
 from update import initialize_landmark
 from convariance import jacobian, covariance 
 from nav_msgs.msg import Odometry
+from matplotlib.patches import Ellipse
+
 
 num_landmarks=32
-Rt=0.05
-
+Rt=0
 k=0
+count = 0
+correction_flag=0
+line = None
 
 Fx = np.zeros((3, 2*num_landmarks + 3))
 for i in range(3):
@@ -48,11 +52,11 @@ distances = []
 #Initialize the state vetor and the convariance matrix
 state_vector, covariance_matrix = initialize_state_covariance(num_landmarks)
 
-print("State Vector:")
-print(state_vector)
+# print("State Vector:")
+# print(state_vector)
 
-print("Covariance Matrix:")
-print(covariance_matrix)
+# print("Covariance Matrix:")
+# print(covariance_matrix)
 
 LANDMARKS = []
 for _ in range(num_landmarks):
@@ -83,7 +87,23 @@ def update_position():
     delta_y = particle_speed * math.sin(angle)
     particle_x += int(delta_x)
     particle_y += int(delta_y)
-    
+
+
+def correcao_landmarks(state_vector,z_matrix,instance_id,list_index):
+    print("Correção de landmark\n")
+    i = 0
+    for id in instance_id:            
+        index=list_index.index(id)
+        print("\nId:",id)
+        print("Index:",index)
+        z_observado = [row[i] for row in z_matrix]
+        z_observado = np.array(z_observado).reshape(-1, 1)
+        print("\nZ observado:\n",z_observado)
+        state_vector[2 * index + 3, 0] = state_vector[0, 0] + z_observado[0, 0] * math.cos(z_observado[1][0] + state_vector[2, 0])
+        state_vector[2 * index + 4, 0] = state_vector[1, 0] + z_observado[0, 0] * math.sin(z_observado[1][0] + state_vector[2, 0])
+
+    return state_vector
+
 def callback(msg):
     global previous_time
     global state_vector
@@ -142,9 +162,10 @@ def callback(msg):
 
     Gt = jacobian(velocity, angular_velocity, dt, state_vector[2,0], Fx, num_landmarks)
     covariance_matrix =  covariance(Gt,covariance_matrix,Fx,Rt,num_landmarks)
+    # print(covariance_matrix)
 
     state_vector = update_pose(state_vector,Fx, dt, velocity, num_landmarks, angular_velocity)
-
+    print("\nVetor change- Motion Model\n")
     #print("state_vector: \n", state_vector)
 
     return new_data_flag
@@ -156,7 +177,13 @@ def callback_fiducial(msg):
 def obtain_fiducial_values(msg):
     global list_index
     global state_vector
-
+    global covariance_matrix
+    global correction_flag
+    
+    global count
+    print("\nCount: ",count)
+    print("\nLandmarks seen:",list_index)
+    count += 1
     i=0
 
     instance_id = set()
@@ -187,7 +214,7 @@ def obtain_fiducial_values(msg):
         observe_z = np.array([distance_R, euler[2]]).reshape(2, 1)
 
         z_matrix=np.concatenate((z_matrix,observe_z), axis=1)
-        
+        print("\nZ_matrix\n",z_matrix)
         marker_id = transform.fiducial_id
 
         #nova landmark no header
@@ -203,25 +230,61 @@ def obtain_fiducial_values(msg):
             k+=1
             list_index.append(marker_id)
 
-            print("number of ids: ", k)
+            print("\nnumber of ids: ", k)
             print("landmark array: ", list_index)
 
             rospy.loginfo("New marker ID registered: {}".format(marker_id))
             
             state_vector[2 * index + 3, 0] = state_vector[0, 0] + observe_z[0, 0] * math.cos(observe_z[1][0] + state_vector[2, 0])
-            state_vector[2 * index + 4, 0] = state_vector[1, 0] + observe_z[0, 0] * math.cos(observe_z[1][0] + state_vector[2, 0])
+            state_vector[2 * index + 4, 0] = state_vector[1, 0] + observe_z[0, 0] * math.sin(observe_z[1][0] + state_vector[2, 0])
 
-            
+    position_model = np.array([state_vector[0, 0], state_vector[1, 0], state_vector[2, 0]]).reshape(-1, 1)
+    print("\nPosition model:\n",position_model)
+    length=len(instance_id)
+    print("LENGTH: ", length)
+    position_data=np.zeros((3, length))
+    k=0
+    for id in instance_id:            
+        index=list_index.index(id)
+        print("\nlist index:", index)
+        data = [row[k] for row in z_matrix]
+        data = np.array(data).reshape(2, 1)
+        print("Data:\n",data)
+        covariance_matrix , state_vector, position_data[:, k] = initialize_landmark(index, num_landmarks, covariance_matrix, state_vector, position_model, data)
+        print("\nState_Vector:\n",state_vector)
+        k+=1
 
-    """ for j in range(i):
-        id = instance_id(j)
+        # print("\nposition data size: ", position_data.shape)
+    
+    # Verificar se não foram lidas landmarks
+    if len(instance_id) == 0:
+        # Código a ser executado quando não há landmarks lidas
+        print("\nNenhuma landmark foi lida.\n")
+    else:  
+        print("\nPosition Data\n",position_data)
+        position_mean = np.mean(position_data, axis=1)
+        position_mean=position_mean.reshape(-1, 1)
+        print("\nPosition mean\n",position_mean)
+        print("position size: ", position_mean.shape )
+        print("state size: ", state_vector.shape)
+        for i in range (0, 2):
+            state_vector[i, 0] = position_mean[i, 0]
+        state_vector = correcao_landmarks(state_vector,z_matrix,instance_id,list_index)
+        correction_flag=1
+    
+def print_elipse():
 
-        MUDAR SET PARA LISTA!!!!
-        
-        index=observed_ids.index(id)
-        data = [row[0] for row in z_matrix]
+    for id in list_index:
 
-        covariance_matrix , state_vector = initialize_landmark(index, num_landmarks, covariance_matrix, state_vector, data) """
+        index = list_index.index(id)
+        array = [ [covariance_matrix[2*index+3,2*index+3],covariance_matrix[2*index+3,2*index +4]],
+                  [covariance_matrix[2*index+4,2*index+3],covariance_matrix[2*index+4,2*index+4]] ]
+        print("Array\n",array)
+        eigenvalues, eigenvectors = np.linalg.eig(array)
+        angle = np.degrees(np.arctan2(eigenvectors[1, 0], eigenvectors[0, 0]))
+        ellipse = Ellipse(xy=(state_vector[2*index+3], state_vector[2*index+4]), width=np.sqrt(eigenvalues[0]) * 2, height=np.sqrt(eigenvalues[1]) * 2, angle=angle, fill = False, edgecolor='yellow')
+
+        ax.add_patch(ellipse)
 
 
     
@@ -235,6 +298,8 @@ sub = rospy.Subscriber('/pose', Odometry, callback)
 sub2 = rospy.Subscriber('/fiducial_transforms', FiducialTransformArray, callback_fiducial)
 
 # Main loop
+
+lines = []
 while True:
     # Update distances
     update_distances()
@@ -262,14 +327,21 @@ while True:
     #for i, landmark in enumerate(LANDMARKS):
         #ax.plot(landmark[0], landmark[1], 'bo', label=f'Landmark {i+1}')
         
-    print("State Vector:", state_vector)
+    #print("State Vector:", state_vector)
     
-    ax.plot(state_vector[0], state_vector[1], 'go', markersize=1)
-    
-    for i in range(num_landmarks):
-        if state_vector[2*i+3] != 0 or state_vector[2*i+4] != 0:
-            ax.plot(state_vector[2*i+3], state_vector[2*i+4], 'r+',markersize = 3)
+    print_elipse()
 
+
+    if correction_flag==1:
+        correction_flag=0
+        ax.plot(state_vector[0], state_vector[1], 'go', markersize=1)
+        for line in lines:
+            line[0].remove()  # Remove the previous line, if it exists
+        lines=[]  
+        for i in range(num_landmarks):
+            if state_vector[2*i+3] != 0 or state_vector[2*i+4] != 0:
+                line=ax.plot(state_vector[2*i+3], state_vector[2*i+4], 'r+',markersize = 3)
+                lines.append(line)  # Store the line object in the list
 
     ax.plot(position_x, position_y, 'bo', markersize=1)
     

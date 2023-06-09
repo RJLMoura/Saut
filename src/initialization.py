@@ -16,6 +16,6 @@ def initialize_state_covariance(num_landmarks):
 
     covariance_matrix = np.zeros((2 * num_landmarks + 3, 2 * num_landmarks + 3))
     for i in range(3, 2 * num_landmarks + 3):
-        covariance_matrix[i, i] = np.inf
+        covariance_matrix[i, i] = 1
 
     return state_vector, covariance_matrix

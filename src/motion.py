@@ -18,8 +18,8 @@ def update_pose(state,Fx, dt, v,n, omega):
     - Novas coordenadas x, y e orientação theta atualizadas
     """
 
-    #print("Velocity:",v, " Angular velocity:",omega,"Time:",dt,"\n")
-    #print("Vector State:",state)
+    print("Velocity:",v, " Angular velocity:",omega,"Time:",dt,"\n")
+    
     if omega==0:
         state[0,0] = state[0,0] + v * dt * math.cos(state[2,0])
         state[1,0] = state[1,0] + v * dt * math.sin(state[2,0])
@@ -32,5 +32,5 @@ def update_pose(state,Fx, dt, v,n, omega):
                  ((v/omega)*math.cos(state[2,0]) - (v/omega)*math.cos(state[2,0] + omega*dt)),
                  (omega*dt)]
         new_state = state + Fx.T @ np.array(array).reshape(-1, 1)
-    
+    print("\nVetor Motion\n",new_state)
     return new_state

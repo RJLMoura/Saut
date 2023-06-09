@@ -37,6 +37,7 @@ def jacobian(v, w, t, theta, Fx, n):
         Gx[1, 2] = -(v / w) * math.sin(theta) + (v / w) * math.sin(theta + w * t)
 
     Gt = np.eye(2*n+3) + Fx.T @ Gx @ Fx 
+    print("Gt\n",Gt)
 
     return Gt
 
@@ -55,7 +56,10 @@ def covariance(Gt, cov, Fx, Rt, n):
     Returns:
     -returns the predicted covariance matrix
     """
-
-    p_cov = Gt @ cov @ Gt.T + Fx.T * Rt @ Fx
-
+    # print("Gt:\n" ,Gt)
+    # print("matriz 1: ", Gt @ cov @ Gt.T)
+    # print("matriz 2: ", Rt*Fx.T @ Fx)
+    print("Cov\n",cov)
+    p_cov = Gt @ cov @ Gt.T + Rt*Fx.T @ Fx
+    print("P_cov\n",p_cov)
     return p_cov
